@@ -1,0 +1,232 @@
+Program.Sub.ScreenSU.Start
+gui.SS_Form1..create
+gui.SS_Form1..caption("Supervisor Login")
+gui.SS_Form1..size(2665,2340)
+gui.SS_Form1..position(0,0)
+gui.SS_Form1..event(unload,cmdcancel_click)
+gui.SS_Form1..alwaysontop(False)
+gui.SS_Form1..fontname("Arial")
+gui.SS_Form1..fontsize(8)
+gui.SS_Form1..forecolor(0)
+gui.SS_Form1..fontstyle(,,,,)
+gui.SS_Form1..BackColor(-2147483633)
+gui.SS_Form1..controlbox(True)
+gui.SS_Form1..maxbutton(False)
+gui.SS_Form1..minbutton(False)
+gui.SS_Form1..mousepointer(0)
+gui.SS_Form1..moveable(True)
+gui.SS_Form1..sizeable(False)
+gui.SS_Form1..ShowInTaskBar(True)
+gui.SS_Form1..titlebar(True)
+gui.SS_Form1.lbl_txtUser.create(label,"User",True,1800,200,1,100,135,True,0,Arial,8,-2147483633,0)
+gui.SS_Form1.txtUser.create(textbox,"",True,1800,330,0,100,335,True,0,Arial,8,16777215,1)
+gui.SS_Form1.cmd_txtUser.create(button)
+gui.SS_Form1.cmd_txtUser.caption("^")
+gui.SS_Form1.cmd_txtUser.visible(False)
+gui.SS_Form1.cmd_txtUser.size(330,330)
+gui.SS_Form1.cmd_txtUser.zorder(0)
+gui.SS_Form1.cmd_txtUser.position(1985,335)
+gui.SS_Form1.cmd_txtUser.enabled(True)
+gui.SS_Form1.cmd_txtUser.fontname("Arial")
+gui.SS_Form1.cmd_txtUser.fontsize(8)
+gui.SS_Form1.cmd_txtUser.event(click,cmd_txtuser_click)
+gui.SS_Form1.lbl_txtPw.create(label,"Password",True,1800,200,1,100,750,True,0,Arial,8,-2147483633,0)
+gui.SS_Form1.txtPw.create(textbox,"",True,1800,330,0,100,950,True,0,Arial,8,16777215,1)
+gui.SS_Form1.cmdOk.create(button)
+gui.SS_Form1.cmdOk.caption("Ok")
+gui.SS_Form1.cmdOk.visible(True)
+gui.SS_Form1.cmdOk.size(1000,360)
+gui.SS_Form1.cmdOk.zorder(0)
+gui.SS_Form1.cmdOk.position(100,1365)
+gui.SS_Form1.cmdOk.enabled(True)
+gui.SS_Form1.cmdOk.fontname("Arial")
+gui.SS_Form1.cmdOk.fontsize(8)
+gui.SS_Form1.cmdOk.event(click,cmdok_click)
+gui.SS_Form1.cmdCancel.create(button)
+gui.SS_Form1.cmdCancel.caption("Cancel")
+gui.SS_Form1.cmdCancel.visible(True)
+gui.SS_Form1.cmdCancel.size(1000,360)
+gui.SS_Form1.cmdCancel.zorder(0)
+gui.SS_Form1.cmdCancel.position(1185,1365)
+gui.SS_Form1.cmdCancel.enabled(True)
+gui.SS_Form1.cmdCancel.fontname("Arial")
+gui.SS_Form1.cmdCancel.fontsize(8)
+gui.SS_Form1.cmdCancel.event(click,cmdcancel_click)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: mla
+'Project Start Date: 6/1/2011
+'Hooks:
+'15754, 15934, 15951
+'Notes:
+'  Loadmaster
+
+'10/23/2012 modify code to check for "Super" group during login in
+'11/14/2013 Dirk D. modified sub cmdok_click and Chk...previous version was bypassing the check
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+Gui.SS_Form1.txtPw.PasswordChar("*")
+F.Intrinsic.Control.CallSub(Chk)
+
+Program.Sub.Main.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+Program.Sub.Chk.Start
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("Chk_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.String.Concat("Select FLAG_CLOSED from V_JOB_OPERATIONS where JOB = '",V.Passed.009000,"' and SUFFIX = '",V.Passed.009001,"' and SEQ = '",V.Passed.009002,"'",V.Local.sSql)
+F.ODBC.Connection!con.OpenLocalRecordsetRO("rst",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.con!rst.FieldValTrim!FLAG_CLOSED,=,"Y")
+	F.Intrinsic.UI.Msgbox("Operation is closed, please request supervisor approval.","Supervisor Approval Required")
+	F.ODBC.con!rst.Close
+	Gui.SS_Form1..Show
+	Gui.SS_Form1.txtUser.SetFocus
+F.Intrinsic.Control.Else
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Chk_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Chk.End
+
+program.sub.cmdok_click.start
+V.Local.sError.Declare(String)
+V.Local.bPWChk.Declare(Boolean)
+V.Local.sSql.Declare(String)
+V.Local.sMember.Declare(String)
+V.Local.i.Declare(Long)
+V.Local.sUser.Declare(String)
+V.Local.sPass.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("cmdOk_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Global.Security.GetGroupMembers("SUPER",V.Local.sMember)
+F.Intrinsic.String.Split(V.Local.sMember,"*!*",V.Local.sMember)
+V.Local.sUser.Set(V.Screen.SS_Form1!txtUser.Text)
+V.Local.sPass.Set(V.Screen.SS_Form1!txtPw.Text)
+
+F.Intrinsic.Control.For(V.Local.i,0,V.Local.sMember.UBound,1)
+	F.Intrinsic.String.Instr(V.Local.sMember(v.Local.i),V.Local.sUser.Trim,V.Local.sMember(v.Local.i))
+	F.Global.Security.ValidateUser(V.Caller.CompanyCode,V.Local.sUser.Trim,V.Local.sPass.Trim,V.Local.bPWChk)
+F.Intrinsic.Control.If(V.Local.sMember(v.Local.i),>,"0")
+	F.Intrinsic.Control.AndIf(V.Local.bPWChk,=,True)
+		Gui.SS_Form1..Visible(False)
+		V.Local.sSql.Set("Select * from ATG_3729_GuiJobLogin")
+		F.ODBC.Connection!con.OpenLocalRecordsetRW("rst",V.Local.sSql)
+		F.ODBC.con!rst.AddNew
+		F.ODBC.con!rst.Set!Job(V.Passed.009000.Trim)
+		F.ODBC.con!rst.Set!Suffix(V.Passed.009001.Trim)
+		F.ODBC.con!rst.Set!Sequence(V.Passed.009002.Trim)
+		F.ODBC.con!rst.Set!Employee_ID(V.Passed.009993.Trim)
+		F.ODBC.con!rst.Set!Supervisor(V.Local.sUser.Trim)
+		F.ODBC.con!rst.Set!Date(V.Ambient.Now)
+		F.ODBC.con!rst.Set!Clocked_Out(0)
+		F.ODBC.con!rst.Update
+		F.ODBC.con!rst.Close
+		F.Intrinsic.String.Concat("Select FLAG_CLOSED from V_JOB_OPERATIONS where JOB = '",V.Passed.009000,"' and SUFFIX = '",V.Passed.009001,"' and SEQ = '",V.Passed.009002,"'",V.Local.sSql)
+		F.ODBC.Connection!con.OpenLocalRecordsetRW("rst",V.Local.sSql)
+		F.ODBC.con!rst.Set!FLAG_CLOSED("")
+		F.ODBC.con!rst.Update
+		F.ODBC.con!rst.Close
+		F.Intrinsic.Control.CallSub(Unload)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.ElseIf(V.Local.sMember(v.Local.sMember.UBound),=,0)
+		F.Intrinsic.UI.Msgbox("Invalid logon. Please try again.","Error in Login")
+		V.Local.i.Set(V.Local.sMember.UBound)
+		Gui.SS_Form1.txtUser.Text("")
+		Gui.SS_Form1.txtPw.Text("")
+		Gui.SS_Form1.txtUser.SetFocus
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.i)
+
+F.Intrinsic.Control.Label("cmdOk_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+program.sub.cmdok_click.end
+
+program.sub.cmd_txtuser_click.start
+V.Local.sError.Declare(String)
+V.Local.sRet.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("cmd_txtUser_Err")
+F.Intrinsic.Control.ClearErrors
+
+F.Intrinsic.UI.Browser(10,"",V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet,<>,"***CANCEL***")
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.SS_Form1.txtUser.Text(V.Local.sRet(1))
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmd_txtUser_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+program.sub.cmd_txtuser_click.end
+
+program.sub.cmdcancel_click.start
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.SetErrorHandler("cmdCancel_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Passed.777777.Set(1)
+F.Intrinsic.Control.CallSub(Unload)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdCancel_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+program.sub.cmdcancel_click.end
+
+Program.Sub.ScreenSS.Start
+SS_Form1{{CAPTION::Supervisor Login
+SS_Form1.CTRL{{NAME::txtUser\\TYPE::2\\CAPTION::User\\GROUP::-1\\BROWSER::1
+SS_Form1.CTRL{{NAME::txtPw\\TYPE::2\\CAPTION::Password\\GROUP::-1\\BROWSER::0
+SS_Form1.CTRL{{NAME::cmdOk\\TYPE::5\\CAPTION::Ok\\GROUP::1\\BROWSER::0
+SS_Form1.CTRL{{NAME::cmdCancel\\TYPE::5\\CAPTION::Cancel\\GROUP::1\\BROWSER::0
+
+Program.Sub.ScreenSS.End
+Program.Sub.Comments.Start
+${$0$}$ATG_3729_Gui_Job_Login$}$JCT$}$4/7/2016
+${$1$}$$}$$}$2$}$15951$}$Pre-Start Job Hook$}$4/7/2016 3:16:45 PM$}$(Program: OLG002; Screen: OLS007)
+
+${$1$}$$}$$}$1$}$15934$}$OLS005-PB-START-JOB-PRE-HOOK(GUI START JOB BUTTON)$}$4/7/2016 3:16:26 PM$}$(Program: OLG002; Screen: OLS005)
+
+${$1$}$$}$$}$0$}$15754$}$OLS001-PRE-WO-SCAN-HOOK(On-Line GUI)$}$4/7/2016 3:16:06 PM$}$(Program: OLG002; Screen: OLS001)
+
+Program.Sub.Comments.End
+
