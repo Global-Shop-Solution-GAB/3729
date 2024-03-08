@@ -1,0 +1,65 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: mla
+'Project Start Date: 8/23/2011
+'Hooks:
+'  15880
+'Notes:
+'  Loadmaster
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.Control.CallSub(Chk)
+
+Program.Sub.Main.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+Program.Sub.Chk.Start
+F.Intrinsic.Control.SetErrorHandler("Chk_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+
+F.Intrinsic.String.Concat("Select * from ATG_3729_GuiJobLogin where JOB = '",V.Passed.009990.Trim,"' and Suffix = '",V.Passed.009991.Trim,"' and Sequence = '",V.Passed.009992,"' and Clocked_Out = 0",V.Local.sSql)
+F.ODBC.Connection!con.OpenRecordsetRO("rst",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,True)
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.Else
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.If(V.Passed.000002.Float,=,0)
+		F.Intrinsic.UI.Msgbox("Please enter a scrap quantity!","Scrap Quantity")
+		V.Passed.777777.Set(1)
+		F.Intrinsic.Control.CallSub(Unload)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.CallSub(Unload)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Chk_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3729_Gui_Job_Login_Chk.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Chk.End
+
+Program.Sub.Comments.Start
+${$0$}$ATG_3729_Gui_Job_Login_Chk$}$JCT$}$4/7/2016
+${$1$}$$}$$}$0$}$15880$}$OLS003-PB-PROCESS-PRE-HOOK (On-line GUI)$}$4/7/2016 3:17:57 PM$}$(Program: OLG002; Screen: OLS003)
+
+Program.Sub.Comments.End
+
