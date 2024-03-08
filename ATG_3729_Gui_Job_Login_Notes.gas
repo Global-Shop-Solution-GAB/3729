@@ -1,0 +1,82 @@
+Program.Sub.ScreenSU.Start
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: mla
+'Project Start Date: 8/23/2011
+'Hooks:
+'  15890
+'Notes:
+'  Loadmaster
+
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.Control.CallSub(Chk)
+
+Program.Sub.Main.End
+
+Program.Sub.Chk.Start
+F.Intrinsic.Control.SetErrorHandler("Chk_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSql.Declare(String)
+V.Local.sNCMRNote.Declare(String)
+V.Local.sNCMR.Declare(String)
+
+F.Intrinsic.String.Concat("Select * from ATG_3729_GuiJobLogin where JOB = '",V.Passed.009990.Trim,"' and Suffix = '",V.Passed.009991.Trim,"' and Sequence = '",V.Passed.009992,"' and Clocked_Out = 0",V.Local.sSql)
+F.ODBC.Connection!con.OpenRecordsetRW("rst",V.Local.sSql)
+F.Intrinsic.Control.If(V.ODBC.con!rst.EOF,=,True)
+	F.ODBC.con!rst.Close
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.Else
+	F.Intrinsic.String.Concat("Select * from SCRAP_DATA where SCRAP_REF ='",V.Passed.SCRAP-REF,"' and STAT < 200",V.Local.sSql)
+	F.ODBC.Connection!con.OpenRecordsetRO("rstRef",V.Local.sSql)
+	F.Intrinsic.Control.DoUntil(V.ODBC.con!rstRef.EOF,=,True)
+		F.Intrinsic.String.LPad(V.ODBC.con!rstRef.FieldValTrim!QUALITY,"0",7,V.Local.sNCMR)
+		F.Intrinsic.Control.If(V.Local.sNCMRNote,=,"")
+			V.Local.sNCMRNote.Set(V.Local.sNCMR)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat(V.Local.sNCMRNote,", ",V.Local.sNCMR,V.Local.sNCMRNote)
+		F.Intrinsic.Control.EndIf
+		F.ODBC.con!rstRef.MoveNext
+	F.Intrinsic.Control.Loop
+	F.ODBC.con!rstRef.Close
+	V.Local.sSql.Set("Select * From ATG_3729_JobLogNotes")
+	F.ODBC.Connection!con.OpenRecordsetRW("rstNote",V.Local.sSql)
+	F.ODBC.con!rstNote.AddNew
+		F.ODBC.con!rstNote.Set!Job(V.ODBC.con!rst.FieldValTrim!Job)
+		F.ODBC.con!rstNote.Set!Suffix(V.ODBC.con!rst.FieldValTrim!Suffix)
+		F.ODBC.con!rstNote.Set!Sequence(V.ODBC.con!rst.FieldValTrim!Sequence)
+		F.ODBC.con!rstNote.Set!Employee_ID(V.ODBC.con!rst.FieldValTrim!Employee_ID)
+		F.ODBC.con!rstNote.Set!Supervisor(V.ODBC.con!rst.FieldValTrim!Supervisor)
+		F.ODBC.con!rstNote.Set!Date(V.ODBC.con!rst.FieldVal!Date)
+		F.ODBC.con!rstNote.Set!NCMR(V.Local.sNCMRNote)
+	F.ODBC.con!rstNote.Update
+	F.ODBC.con!rstNote.Close
+	F.ODBC.con!rst.Close
+	F.Intrinsic.String.Concat("Delete ATG_3729_GuiJobLogin where JOB = '",V.Passed.009990.Trim,"' and Suffix = '",V.Passed.009991.Trim,"' and Sequence = '",V.Passed.009992,"' and Clocked_Out = 0",V.Local.sSql)
+	F.ODBC.Connection!con.Execute(V.Local.sSql)
+	F.Intrinsic.Control.CallSub(Unload)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Chk_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3729_Gui_Job_Login_Notes.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Chk.End
+
+Program.Sub.Unload.Start
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End
+
+Program.Sub.Unload.End
+
+
